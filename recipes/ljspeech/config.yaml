@@ -1,0 +1,10 @@
+defaults:
+    - ../../configs/config.yaml
+    - _self_
+
+data:
+    dataset_name: "ljspeech"
+
+paths:
+    raw_dir: "data/raw/ljspeech"
+    preprocessed_dir: "data/preprocessed/ljspeech"
