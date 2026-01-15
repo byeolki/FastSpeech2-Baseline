@@ -1,0 +1,12 @@
+data:
+    dataset_name: "ljspeech"
+    train_split: 0.95
+    val_split: 0.05
+
+    text:
+        cleaners: ["english_cleaners"]
+        add_blank: true
+
+    paths:
+        metadata: "metadata.csv"
+        wavs: "wavs"
