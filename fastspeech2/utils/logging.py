@@ -1,51 +1,52 @@
-import logging
-import sys
 from pathlib import Path
-from torch.utils.tensorboard import SummaryWriter
+
+import torch
+import wandb
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Logger:
-    def __init__(self, log_dir: str, name: str = "fastspeech2"):
-        self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, config, enabled=True):
+        self.enabled = enabled and config.get("wandb", {}).get("enabled", False)
 
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.INFO)
-
-        if not self.logger.handlers:
-            file_handler = logging.FileHandler(self.log_dir / "train.log")
-            file_handler.setLevel(logging.INFO)
-
-            console_handler = logging.StreamHandler(sys.stdout)
-            console_handler.setLevel(logging.INFO)
-
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        if self.enabled:
+            wandb.init(
+                project=config["wandb"]["project"],
+                entity=config["wandb"].get("entity", None),
+                config=dict(config),
+                name=config.get("experiment_name", "fastspeech2"),
             )
-            file_handler.setFormatter(formatter)
-            console_handler.setFormatter(formatter)
 
-            self.logger.addHandler(file_handler)
-            self.logger.addHandler(console_handler)
+    def log(self, metrics, step):
+        if self.enabled:
+            wandb.log(metrics, step=step)
 
-        self.writer = SummaryWriter(log_dir=str(self.log_dir))
+    def log_audio(self, tag, audio, step, sample_rate=22050):
+        if self.enabled:
+            wandb.log({tag: wandb.Audio(audio, sample_rate=sample_rate)}, step=step)
 
-    def info(self, msg: str):
-        self.logger.info(msg)
+    def log_image(self, tag, image, step):
+        if self.enabled:
+            wandb.log({tag: wandb.Image(image)}, step=step)
 
-    def warning(self, msg: str):
-        self.logger.warning(msg)
+    def finish(self):
+        if self.enabled:
+            wandb.finish()
 
-    def error(self, msg: str):
-        self.logger.error(msg)
 
-    def log_scalar(self, tag: str, value: float, step: int):
-        self.writer.add_scalar(tag, value, step)
+def save_checkpoint(state, checkpoint_dir, step):
+    checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    def log_scalars(self, main_tag: str, tag_scalar_dict: dict, step: int):
-        self.writer.add_scalars(main_tag, tag_scalar_dict, step)
+    checkpoint_path = checkpoint_dir / f"checkpoint_{step}.pt"
+    torch.save(state, checkpoint_path)
 
-    def log_audio(self, tag: str, audio: any, step: int, sample_rate: int):
-        self.writer.add_audio(tag, audio, step, sample_rate=sample_rate)
+    latest_path = checkpoint_dir / "latest.pt"
+    torch.save(state, latest_path)
 
-    def log_image(self, tag: str, image: any, step: int):
+
+def load_checkpoint(checkpoint_path, device="cpu"):
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    return checkpoint
