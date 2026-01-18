@@ -10,37 +10,36 @@ from ..models.fastspeech2 import FastSpeech2
 from ..utils import Logger, load_checkpoint, save_checkpoint
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
-
+from ..data import FastSpeech2Collate
 
 class Trainer:
     def __init__(self, config, train_dataset, val_dataset):
-        self.device = torch.device(config["device"])
+        self.config = config
+        self.device = torch.device(config['device'])
 
         self.model = FastSpeech2(config).to(self.device)
         self.criterion = FastSpeech2Loss(config)
         self.optimizer = get_optimizer(self.model, config)
         self.scheduler = get_scheduler(self.optimizer, config)
 
+        collate_fn = FastSpeech2Collate()
+
         self.train_loader = DataLoader(
             train_dataset,
-            batch_size=config["train"]["batch_size"],
+            batch_size=config['train']['batch_size'],
             shuffle=True,
-            num_workers=config["train"]["num_workers"],
-            pin_memory=config["train"]["pin_memory"],
-            collate_fn=train_dataset.collate_fn
-            if hasattr(train_dataset, "collate_fn")
-            else None,
+            num_workers=config['train']['num_workers'],
+            pin_memory=config['train']['pin_memory'],
+            collate_fn=collate_fn
         )
 
         self.val_loader = DataLoader(
             val_dataset,
-            batch_size=config["train"]["batch_size"],
+            batch_size=config['train']['batch_size'],
             shuffle=False,
-            num_workers=config["train"]["num_workers"],
-            pin_memory=config["train"]["pin_memory"],
-            collate_fn=val_dataset.collate_fn
-            if hasattr(val_dataset, "collate_fn")
-            else None,
+            num_workers=config['train']['num_workers'],
+            pin_memory=config['train']['pin_memory'],
+            collate_fn=collate_fn
         )
 
         self.logger = Logger(config)
