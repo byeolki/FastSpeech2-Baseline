@@ -23,11 +23,7 @@ class MultiHeadAttention(nn.Module):
         self.scale = math.sqrt(self.d_k)
 
     def forward(
-        self,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        mask: torch.Tensor = None,
-        mask: torch.Tensor = None
+        self, query: torch.Tensor, key: torch.Tensor, mask: torch.Tensor = None
     ) -> torch.Tensor:
         batch_size = query.size(0)
 

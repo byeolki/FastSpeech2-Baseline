@@ -6,12 +6,13 @@ from omegaconf import OmegaConf
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+from tools.compute_statistics import compute_statistics
 from tools.extract_durations import (
+    extract_durations_from_textgrids,
     prepare_mfa_corpus,
     run_mfa_alignment,
-    extract_durations_from_textgrids,
 )
-from tools.compute_statistics import compute_statistics
+from tools.preprocess_dataset import preprocess_ljspeech
 
 
 def main():
@@ -20,11 +21,6 @@ def main():
     parser.add_argument(
         "--stage", type=int, default=0, help="0: all, 1: audio, 2: mfa, 3: stats"
     )
-
-def main():
-    parser = argparse.ArgumentParser(description="Preprocess LJSpeech dataset")
-    parser.add_argument('--config', type=str, default='configs/config.yaml')
-    parser.add_argument('--stage', type=int, default=0, help='0: all, 1: audio, 2: mfa, 3: stats')
     args = parser.parse_args()
 
     config = OmegaConf.load(args.config)

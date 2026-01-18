@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import Dataset
 
 
+class LJSpeechDataset(Dataset):
     def __init__(self, preprocessed_dir: str, split: str = "train", sort: bool = True):
         self.preprocessed_dir = Path(preprocessed_dir)
         self.split = split
@@ -45,5 +46,4 @@ from torch.utils.data import Dataset
             "energy": torch.FloatTensor(energy),
             "text_len": len(text),
             "mel_len": len(mel),
-            'mel_len': len(mel)
         }

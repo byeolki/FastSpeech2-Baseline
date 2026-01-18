@@ -1,13 +1,5 @@
-defaults:
-    - base/model
-    - base/audio
-    - ljspeech/data/dataset
-    - ljspeech/model/fastspeech2
-    - ljspeech/train/default
-    - _self_
-
 project_name: "fastspeech2-baseline"
-experiment_name: "${project_name}_${now:%Y%m%d_%H%M%S}"
+experiment_name: "fastspeech2-baseline"
 seed: 1234
 device: "cuda"
 
@@ -17,10 +9,112 @@ wandb:
     entity: null
 
 paths:
-    root_dir: ${oc.env:PWD}
-    data_dir: ${paths.root_dir}/data
-    raw_dir: ${paths.data_dir}/raw/ljspeech
-    preprocessed_dir: ${paths.data_dir}/preprocessed/ljspeech
-    checkpoint_dir: ${paths.root_dir}/experiments/${experiment_name}/checkpoints
-    log_dir: ${paths.root_dir}/experiments/${experiment_name}/logs
-    output_dir: ${paths.root_dir}/experiments/${experiment_name}/outputs
+    root_dir: "."
+    data_dir: "./data"
+    raw_dir: "./data/raw/ljspeech"
+    preprocessed_dir: "./data/preprocessed/ljspeech"
+    checkpoint_dir: "./experiments/${experiment_name}/checkpoints"
+    log_dir: "./experiments/${experiment_name}/logs"
+    output_dir: "./experiments/${experiment_name}/outputs"
+
+audio:
+    sampling_rate: 22050
+    filter_length: 1024
+    hop_length: 256
+    win_length: 1024
+    n_mel_channels: 80
+    mel_fmin: 0.0
+    mel_fmax: 8000.0
+    max_wav_value: 32768.0
+
+    pitch:
+        f0_min: 71.0
+        f0_max: 800.0
+        use_log_scale: true
+
+    energy:
+        use_log_scale: true
+
+model:
+    vocab_size: 300
+    max_seq_len: 1000
+
+    encoder:
+        n_layers: 4
+        n_heads: 2
+        d_model: 256
+        d_ffn: 1024
+        kernel_size: 9
+        dropout: 0.2
+
+    decoder:
+        n_layers: 4
+        n_heads: 2
+        d_model: 256
+        d_ffn: 1024
+        kernel_size: 9
+        dropout: 0.2
+
+    variance_adaptor:
+        duration_predictor:
+            n_layers: 2
+            kernel_size: 3
+            dropout: 0.5
+
+        pitch_predictor:
+            n_layers: 2
+            kernel_size: 3
+            dropout: 0.5
+            n_bins: 256
+
+        energy_predictor:
+            n_layers: 2
+            kernel_size: 3
+            dropout: 0.5
+            n_bins: 256
+
+data:
+    dataset_name: "ljspeech"
+    train_split: 0.95
+    val_split: 0.05
+
+    text:
+        cleaners: ["english_cleaners"]
+        add_blank: true
+
+    paths:
+        metadata: "metadata.csv"
+        wavs: "wavs"
+
+train:
+    batch_size: 32
+    accumulate_grad_batches: 1
+    num_workers: 8
+    pin_memory: true
+    prefetch_factor: 2
+
+    epochs: 1000
+    save_every_n_epochs: 10
+    validate_every_n_epochs: 1
+    log_every_n_steps: 100
+
+    optimizer:
+        name: "AdamW"
+        lr: 1e-3
+        betas: [0.9, 0.98]
+        eps: 1e-9
+        weight_decay: 1e-6
+
+    scheduler:
+        name: "noam"
+        warmup_steps: 4000
+
+    mixed_precision: "bf16"
+    gradient_clip_val: 1.0
+
+    loss_weights:
+        mel: 1.0
+        postnet: 1.0
+        duration: 1.0
+        pitch: 0.1
+        energy: 0.1

@@ -12,7 +12,7 @@ class MelLoss(nn.Module):
         mel_pred: torch.Tensor,
         mel_target: torch.Tensor,
         mel_postnet: torch.Tensor = None,
-        mask: torch.Tensor = None
+        mask: torch.Tensor = None,
     ) -> dict:
         if mask is not None:
             mask = mask.unsqueeze(-1).expand_as(mel_pred)
@@ -23,8 +23,10 @@ class MelLoss(nn.Module):
 
         mel_loss = self.mae(mel_pred, mel_target)
 
-        losses = {'mel': mel_loss}
+        losses = {"mel": mel_loss}
 
         if mel_postnet is not None:
             postnet_loss = self.mae(mel_postnet, mel_target)
-            losses['postnet'] =
+            losses["postnet"] = postnet_loss
+
+        return losses

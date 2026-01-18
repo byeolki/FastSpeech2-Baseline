@@ -33,7 +33,6 @@ class VarianceAdaptor(nn.Module):
         duration_control: float = 1.0,
         pitch_control: float = 1.0,
         energy_control: float = 1.0,
-        energy_control: float = 1.0
     ):
         duration_pred = self.duration_predictor(x)
 

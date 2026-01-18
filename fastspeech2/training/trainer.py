@@ -5,17 +5,18 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from ..data import FastSpeech2Collate
 from ..losses import FastSpeech2Loss
 from ..models.fastspeech2 import FastSpeech2
 from ..utils import Logger, load_checkpoint, save_checkpoint
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
-from ..data import FastSpeech2Collate
+
 
 class Trainer:
     def __init__(self, config, train_dataset, val_dataset):
         self.config = config
-        self.device = torch.device(config['device'])
+        self.device = torch.device(config["device"])
 
         self.model = FastSpeech2(config).to(self.device)
         self.criterion = FastSpeech2Loss(config)
@@ -26,20 +27,20 @@ class Trainer:
 
         self.train_loader = DataLoader(
             train_dataset,
-            batch_size=config['train']['batch_size'],
+            batch_size=config["train"]["batch_size"],
             shuffle=True,
-            num_workers=config['train']['num_workers'],
-            pin_memory=config['train']['pin_memory'],
-            collate_fn=collate_fn
+            num_workers=config["train"]["num_workers"],
+            pin_memory=config["train"]["pin_memory"],
+            collate_fn=collate_fn,
         )
 
         self.val_loader = DataLoader(
             val_dataset,
-            batch_size=config['train']['batch_size'],
+            batch_size=config["train"]["batch_size"],
             shuffle=False,
-            num_workers=config['train']['num_workers'],
-            pin_memory=config['train']['pin_memory'],
-            collate_fn=collate_fn
+            num_workers=config["train"]["num_workers"],
+            pin_memory=config["train"]["pin_memory"],
+            collate_fn=collate_fn,
         )
 
         self.logger = Logger(config)
@@ -193,8 +194,9 @@ class Trainer:
                     "config": self.config,
                 }
                 save_checkpoint(
-                    state, self.config["paths"]["checkpoint_dir"], self.global_step
-                    self.global_step
+                    state,
+                    self.config["paths"]["checkpoint_dir"],
+                    self.global_step,
                 )
 
         self.logger.finish()

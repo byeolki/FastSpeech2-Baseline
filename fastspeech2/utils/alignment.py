@@ -1,7 +1,8 @@
 import os
 import subprocess
-import textgrid
 from typing import List, Tuple
+
+import textgrid
 
 
 class MontrealForcedAligner:
@@ -9,8 +10,7 @@ class MontrealForcedAligner:
         self,
         corpus_dir: str,
         dict_path: str,
-        acoustic_model: str = "english_us_arpa",
-        output_dir: str = None
+        output_dir: str = None,
     ):
         self.corpus_dir = corpus_dir
         self.dict_path = dict_path
@@ -19,12 +19,13 @@ class MontrealForcedAligner:
 
     def align(self):
         cmd = [
-            "mfa", "align",
+            "mfa",
+            "align",
             self.corpus_dir,
             self.dict_path,
             self.acoustic_model,
             self.output_dir,
-            "--clean"
+            "--clean",
         ]
 
         try:
@@ -52,10 +53,13 @@ class MontrealForcedAligner:
         self,
         textgrid_path: str,
         hop_length: int,
-        sampling_rate: int
+        sampling_rate: int,
     ) -> List[int]:
         durations = self.extract_durations(textgrid_path)
 
         frame_durations = []
         for phone, duration in durations:
-            n_frames = int(duration * sampling_ra
+            n_frames = int(duration * sampling_rate / hop_length + 0.5)
+            frame_durations.append(n_frames)
+
+        return frame_durations

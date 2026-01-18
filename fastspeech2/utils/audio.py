@@ -104,7 +104,6 @@ class AudioProcessor:
         feature: np.ndarray,
         mean: Optional[float] = None,
         std: Optional[float] = None,
-        std: Optional[float] = None
     ) -> tuple:
         if mean is None:
             mean = np.mean(feature[feature != 0])
