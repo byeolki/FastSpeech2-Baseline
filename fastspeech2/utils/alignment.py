@@ -10,6 +10,7 @@ class MontrealForcedAligner:
         self,
         corpus_dir: str,
         dict_path: str,
+        acoustic_model: str = "english_us_arpa",
         output_dir: str = None,
     ):
         self.corpus_dir = corpus_dir
@@ -50,10 +51,7 @@ class MontrealForcedAligner:
         return durations
 
     def get_phoneme_durations(
-        self,
-        textgrid_path: str,
-        hop_length: int,
-        sampling_rate: int,
+        self, textgrid_path: str, hop_length: int, sampling_rate: int
     ) -> List[int]:
         durations = self.extract_durations(textgrid_path)
 
