@@ -22,18 +22,17 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.scale = math.sqrt(self.d_k)
 
-    def forward(
-        self, query: torch.Tensor, key: torch.Tensor, mask: torch.Tensor = None
-    ) -> torch.Tensor:
-        batch_size = query.size(0)
+    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+        batch_size = x.size(0)
 
-        Q = self.w_q(query).view(batch_size, -1, self.n_heads, self.d_k).transpose(1, 2)
-        K = self.w_k(key).view(batch_size, -1, self.n_heads, self.d_k).transpose(1, 2)
-        V = self.w_v(value).view(batch_size, -1, self.n_heads, self.d_k).transpose(1, 2)
+        Q = self.w_q(x).view(batch_size, -1, self.n_heads, self.d_k).transpose(1, 2)
+        K = self.w_k(x).view(batch_size, -1, self.n_heads, self.d_k).transpose(1, 2)
+        V = self.w_v(x).view(batch_size, -1, self.n_heads, self.d_k).transpose(1, 2)
 
         scores = torch.matmul(Q, K.transpose(-2, -1)) / self.scale
 
         if mask is not None:
+            mask = mask.unsqueeze(1).unsqueeze(2)
             scores = scores.masked_fill(mask == 0, -1e9)
 
         attn = F.softmax(scores, dim=-1)

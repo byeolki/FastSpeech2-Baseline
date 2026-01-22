@@ -8,6 +8,7 @@ class FastSpeech2Collate:
     def __init__(self):
         pass
 
+    def __call__(self, batch: List[Dict]) -> Dict:
         basenames = [item["basename"] for item in batch]
         text_lens = torch.LongTensor([item["text_len"] for item in batch])
         mel_lens = torch.LongTensor([item["mel_len"] for item in batch])
@@ -27,10 +28,13 @@ class FastSpeech2Collate:
         for i, item in enumerate(batch):
             text_len = item["text_len"]
             mel_len = item["mel_len"]
+            dur_len = len(item["duration"])
+
+            actual_text_len = min(text_len, dur_len)
 
             texts[i, :text_len] = item["text"]
             mels[i, :mel_len] = item["mel"]
-            durations[i, :text_len] = item["duration"]
+            durations[i, :actual_text_len] = item["duration"][:actual_text_len]
             pitches[i, :mel_len] = item["pitch"]
             energies[i, :mel_len] = item["energy"]
 
@@ -59,6 +63,5 @@ class FastSpeech2Collate:
             .unsqueeze(0)
             .expand(batch_size, -1)
         )
-        ids = torch.arange(0, max_len, device=lengths.device).unsqueeze(0).expand(batch_size, -1)
         mask = ids < lengths.unsqueeze(1)
         return mask

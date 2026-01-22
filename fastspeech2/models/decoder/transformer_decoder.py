@@ -13,6 +13,7 @@ class TransformerDecoder(nn.Module):
         d_ffn: int,
         n_mel_channels: int,
         kernel_size: int = 9,
+        dropout: float = 0.2,
         max_seq_len: int = 5000,
     ):
         super().__init__()
@@ -28,28 +29,31 @@ class TransformerDecoder(nn.Module):
         )
 
         self.mel_linear = nn.Linear(d_model, n_mel_channels)
+        nn.init.xavier_uniform_(self.mel_linear.weight)
+        nn.init.constant_(self.mel_linear.bias, 0.0)
 
         self.postnet = nn.Sequential(
             nn.Conv1d(n_mel_channels, 512, kernel_size=5, padding=2),
-            nn.BatchNorm1d(512),
             nn.Tanh(),
             nn.Dropout(0.5),
             nn.Conv1d(512, 512, kernel_size=5, padding=2),
-            nn.BatchNorm1d(512),
             nn.Tanh(),
             nn.Dropout(0.5),
             nn.Conv1d(512, 512, kernel_size=5, padding=2),
-            nn.BatchNorm1d(512),
             nn.Tanh(),
             nn.Dropout(0.5),
             nn.Conv1d(512, 512, kernel_size=5, padding=2),
-            nn.BatchNorm1d(512),
             nn.Tanh(),
             nn.Dropout(0.5),
             nn.Conv1d(512, n_mel_channels, kernel_size=5, padding=2),
             nn.Dropout(0.5),
-            nn.Dropout(0.5)
         )
+
+        for m in self.postnet.modules():
+            if isinstance(m, nn.Conv1d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0.0)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> tuple:
         x = self.pos_encoding(x)

@@ -10,6 +10,7 @@ class FFTBlock(nn.Module):
         d_model: int,
         n_heads: int,
         d_ffn: int,
+        kernel_size: int = 9,
         dropout: float = 0.2,
     ):
         super().__init__()
@@ -24,7 +25,6 @@ class FFTBlock(nn.Module):
         self.conv2 = nn.Conv1d(
             d_ffn, d_model, kernel_size, padding=(kernel_size - 1) // 2
         )
-        self.conv2 = nn.Conv1d(d_ffn, d_model, kernel_size, padding=(kernel_size - 1) // 2)
         self.norm2 = nn.LayerNorm(d_model)
         self.dropout2 = nn.Dropout(dropout)
 
@@ -32,7 +32,7 @@ class FFTBlock(nn.Module):
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         residual = x
-        x = self.self_attn(x, x, x, mask)
+        x = self.self_attn(x, mask)
         x = self.dropout1(x)
         x = self.norm1(residual + x)
 

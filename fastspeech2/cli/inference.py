@@ -20,6 +20,7 @@ def synthesize(
     vocoder,
     device,
     duration_control=1.0,
+    pitch_control=1.0,
     energy_control=1.0,
 ):
     model.eval()
@@ -87,7 +88,6 @@ def main():
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     np.save(str(output_path).replace(".wav", "_mel.npy"), mel)
-    np.save(str(output_path).replace('.wav', '_mel.npy'), mel)
 
     if wav is not None:
         audio_processor.save_wav(str(output_path), wav)

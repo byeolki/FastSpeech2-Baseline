@@ -15,7 +15,7 @@ def main():
     parser = argparse.ArgumentParser(description="Train FastSpeech2")
     parser.add_argument("--config", type=str, default="configs/config.yaml")
     parser.add_argument(
-        "--resume", type=str, default=None, help="Checkpoint path to resume"
+        "--checkpoint", type=str, default=None, help="Checkpoint path to resume from"
     )
     args = parser.parse_args()
 
@@ -33,16 +33,15 @@ def main():
 
     trainer = Trainer(config, train_dataset, val_dataset)
 
-    if args.resume:
+    if args.checkpoint:
         from fastspeech2.utils import load_checkpoint
 
-        checkpoint = load_checkpoint(args.resume, device=config["device"])
+        checkpoint = load_checkpoint(args.checkpoint, device=config["device"])
         trainer.model.load_state_dict(checkpoint["model"])
         trainer.optimizer.load_state_dict(checkpoint["optimizer"])
-        trainer.current_epoch = checkpoint["epoch"]
+        trainer.current_epoch = checkpoint["epoch"] + 1
         trainer.global_step = checkpoint["global_step"]
-        trainer.global_step = checkpoint["global_step"]
-        print(f"Resumed from epoch {trainer.current_epoch}, step {trainer.global_step}")
+        print(f"Resumed from epoch {checkpoint['epoch']}, step {trainer.global_step}")
 
     trainer.train()
 

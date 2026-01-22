@@ -78,5 +78,4 @@ class FastSpeech2(nn.Module):
             "duration_pred": duration_pred,
             "pitch_pred": pitch_pred,
             "energy_pred": energy_pred,
-            'energy_pred': energy_pred
         }

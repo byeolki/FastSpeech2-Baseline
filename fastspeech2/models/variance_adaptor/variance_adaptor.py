@@ -12,6 +12,7 @@ class VarianceAdaptor(nn.Module):
         self,
         d_model: int,
         duration_predictor_params: dict,
+        pitch_predictor_params: dict,
         energy_predictor_params: dict,
     ):
         super().__init__()
