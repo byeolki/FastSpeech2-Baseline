@@ -17,13 +17,18 @@ class AudioProcessor:
         self.mel_fmax = config["mel_fmax"]
         self.max_wav_value = config["max_wav_value"]
 
-        self.mel_basis = librosa.filters.mel(
-            sr=self.sampling_rate,
-            n_fft=self.filter_length,
-            n_mels=self.n_mel_channels,
-            fmin=self.mel_fmin,
-            fmax=self.mel_fmax,
-        )
+        from torchaudio.prototype.pipelines import HIFIGAN_VOCODER_V3_LJSPEECH
+
+        bundle = HIFIGAN_VOCODER_V3_LJSPEECH
+        self.mel_transform = bundle.get_mel_transform()
+
+        assert self.sampling_rate == bundle.sample_rate
+        assert self.filter_length == self.mel_transform.n_fft
+        assert self.hop_length == self.mel_transform.hop_size
+        assert self.win_length == self.mel_transform.win_length
+        assert self.n_mel_channels == self.mel_transform.n_mels
+        assert self.mel_fmin == self.mel_transform.f_min
+        assert self.mel_fmax == self.mel_transform.f_max
 
     def load_wav(self, path: str) -> np.ndarray:
         wav, sr = librosa.load(path, sr=self.sampling_rate)
@@ -39,26 +44,15 @@ class AudioProcessor:
         sf.write(path, wav, self.sampling_rate)
 
     def wav_to_mel(self, wav: np.ndarray) -> np.ndarray:
-        if isinstance(wav, torch.Tensor):
-            wav = wav.numpy()
+        if isinstance(wav, np.ndarray):
+            wav = torch.FloatTensor(wav)
 
-        wav = wav / self.max_wav_value
+        if len(wav.shape) == 1:
+            wav = wav.unsqueeze(0)
 
-        D = librosa.stft(
-            wav,
-            n_fft=self.filter_length,
-            hop_length=self.hop_length,
-            win_length=self.win_length,
-            window="hann",
-            center=True,
-            pad_mode="reflect",
-        )
+        mel_spec = self.mel_transform(wav)
 
-        S = np.abs(D)
-        mel = np.dot(self.mel_basis, S)
-        mel = np.log(np.clip(mel, a_min=1e-5, a_max=None))
-
-        return mel.T
+        return mel_spec.squeeze(0).T.numpy()
 
     def mel_to_wav(self, mel: np.ndarray) -> np.ndarray:
         raise NotImplementedError("Use HiFi-GAN vocoder for mel to wav conversion")
