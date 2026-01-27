@@ -51,6 +51,16 @@ class Trainer:
         self.global_step = 0
         self.current_epoch = 0
 
+        # Early stopping
+        self.best_val_loss = float("inf")
+        self.patience_counter = 0
+        self.early_stop_patience = (
+            config["train"].get("early_stopping", {}).get("patience", 50)
+        )
+        self.early_stop_min_delta = (
+            config["train"].get("early_stopping", {}).get("min_delta", 0.001)
+        )
+
     def train_epoch(self):
         self.model.train()
         total_loss = 0
@@ -184,6 +194,21 @@ class Trainer:
                 print(
                     f"Epoch {epoch}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}"
                 )
+
+                # Early stopping check
+                if val_loss < self.best_val_loss - self.early_stop_min_delta:
+                    self.best_val_loss = val_loss
+                    self.patience_counter = 0
+                    print(f"Val loss improved to {val_loss:.4f}")
+                else:
+                    self.patience_counter += 1
+                    print(
+                        f"No improvement. Patience: {self.patience_counter}/{self.early_stop_patience}"
+                    )
+
+                if self.patience_counter >= self.early_stop_patience:
+                    print(f"Early stopping triggered at epoch {epoch}")
+                    break
 
             if epoch % self.config["train"]["save_every_n_epochs"] == 0:
                 state = {
