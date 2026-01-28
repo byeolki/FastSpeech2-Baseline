@@ -1,3 +1,5 @@
+# Optimized for NVIDIA L40S 48GB GPU
+
 project_name: "fastspeech2-baseline"
 experiment_name: "fastspeech2-baseline"
 seed: 1234
@@ -41,37 +43,41 @@ model:
 
     encoder:
         n_layers: 4
-        n_heads: 2
-        d_model: 256
-        d_ffn: 1024
+        n_heads: 4
+        d_model: 384
+        d_ffn: 1536
         kernel_size: 9
-        dropout: 0.4
+        dropout: 0.2
 
     decoder:
         n_layers: 4
-        n_heads: 2
-        d_model: 256
-        d_ffn: 1024
+        n_heads: 4
+        d_model: 384
+        d_ffn: 1536
         kernel_size: 9
-        dropout: 0.4
+        dropout: 0.2
 
     variance_adaptor:
         duration_predictor:
             n_layers: 2
             kernel_size: 3
-            dropout: 0.5
+            dropout: 0.3
 
         pitch_predictor:
             n_layers: 3
             kernel_size: 3
-            dropout: 0.5
+            dropout: 0.3
             n_bins: 256
+            pitch_min: 4.0
+            pitch_max: 7.0
 
         energy_predictor:
             n_layers: 2
             kernel_size: 3
-            dropout: 0.5
+            dropout: 0.3
             n_bins: 256
+            energy_min: -4.5
+            energy_max: 6.0
 
 data:
     dataset_name: "ljspeech"
@@ -89,9 +95,9 @@ data:
 train:
     batch_size: 128
     accumulate_grad_batches: 1
-    num_workers: 8
+    num_workers: 16
     pin_memory: true
-    prefetch_factor: 2
+    prefetch_factor: 4
 
     epochs: 1000
     save_every_n_epochs: 10
@@ -100,10 +106,10 @@ train:
 
     optimizer:
         name: "AdamW"
-        lr: 1e-3
+        lr: 5e-4
         betas: [0.9, 0.98]
         eps: 1e-9
-        weight_decay: 1e-3
+        weight_decay: 1e-4
 
     scheduler:
         name: "noam"
@@ -115,10 +121,10 @@ train:
     loss_weights:
         mel: 1.0
         postnet: 1.0
-        duration: 1.0
-        pitch: 0.15
-        energy: 0.1
+        duration: 0.3
+        pitch: 0.5
+        energy: 0.2
 
     early_stopping:
-        patience: 30
+        patience: 20
         min_delta: 0.001

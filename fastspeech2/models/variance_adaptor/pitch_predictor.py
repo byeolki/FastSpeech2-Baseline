@@ -8,8 +8,10 @@ class PitchPredictor(nn.Module):
         d_model: int,
         n_layers: int = 2,
         kernel_size: int = 3,
-        dropout: float = 0.5,
+        dropout: float = 0.3,
         n_bins: int = 256,
+        pitch_min: float = 0.0,
+        pitch_max: float = 6.8,
     ):
         super().__init__()
 
@@ -27,7 +29,7 @@ class PitchPredictor(nn.Module):
         self.relu = nn.ReLU()
 
         self.pitch_bins = nn.Parameter(
-            torch.linspace(0, 1, n_bins - 1), requires_grad=False
+            torch.linspace(pitch_min, pitch_max, n_bins - 1), requires_grad=False
         )
         self.pitch_embedding = nn.Embedding(n_bins, d_model)
 
@@ -35,12 +37,14 @@ class PitchPredictor(nn.Module):
         x = x.transpose(1, 2)
 
         for conv, norm in zip(self.convs, self.norms):
+            residual = x
             x = conv(x)
             x = x.transpose(1, 2)
             x = norm(x)
             x = self.relu(x)
             x = self.dropout(x)
             x = x.transpose(1, 2)
+            x = x + residual
 
         x = x.transpose(1, 2)
         x = self.linear(x)

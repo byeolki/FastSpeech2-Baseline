@@ -8,8 +8,10 @@ class EnergyPredictor(nn.Module):
         d_model: int,
         n_layers: int = 2,
         kernel_size: int = 3,
-        dropout: float = 0.5,
+        dropout: float = 0.3,
         n_bins: int = 256,
+        energy_min: float = -4.5,
+        energy_max: float = 6.0,
     ):
         super().__init__()
 
@@ -27,7 +29,7 @@ class EnergyPredictor(nn.Module):
         self.relu = nn.ReLU()
 
         self.energy_bins = nn.Parameter(
-            torch.linspace(0, 1, n_bins - 1), requires_grad=False
+            torch.linspace(energy_min, energy_max, n_bins - 1), requires_grad=False
         )
         self.energy_embedding = nn.Embedding(n_bins, d_model)
 
@@ -35,12 +37,14 @@ class EnergyPredictor(nn.Module):
         x = x.transpose(1, 2)
 
         for conv, norm in zip(self.convs, self.norms):
+            residual = x
             x = conv(x)
             x = x.transpose(1, 2)
             x = norm(x)
             x = self.relu(x)
             x = self.dropout(x)
             x = x.transpose(1, 2)
+            x = x + residual
 
         x = x.transpose(1, 2)
         x = self.linear(x)
