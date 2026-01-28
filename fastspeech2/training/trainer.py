@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import torch
@@ -8,7 +9,7 @@ from tqdm import tqdm
 from ..data import FastSpeech2Collate
 from ..losses import FastSpeech2Loss
 from ..models.fastspeech2 import FastSpeech2
-from ..utils import Logger, load_checkpoint, save_checkpoint
+from ..utils import DiscordNotifier, Logger, load_checkpoint, save_checkpoint
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
 
@@ -48,11 +49,18 @@ class Trainer:
             torch.amp.GradScaler("cuda") if config["train"]["mixed_precision"] else None
         )
 
+        webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "")
+        discord_enabled = config.get("discord", {}).get("enabled", False)
+        self.discord = DiscordNotifier(webhook_url if discord_enabled else None)
+        self.notify_every_n_epochs = config.get("discord", {}).get(
+            "notify_every_n_epochs", 100
+        )
+
         self.global_step = 0
         self.current_epoch = 0
 
-        # Early stopping
         self.best_val_loss = float("inf")
+        self.best_epoch = 0
         self.patience_counter = 0
         self.early_stop_patience = (
             config["train"].get("early_stopping", {}).get("patience", 50)
@@ -184,6 +192,18 @@ class Trainer:
         return avg_loss
 
     def train(self):
+        self.discord.send_training_start(
+            total_epochs=self.config["train"]["epochs"],
+            batch_size=self.config["train"]["batch_size"],
+            train_samples=len(self.train_loader.dataset),
+            val_samples=len(self.val_loader.dataset),
+            model_params={
+                "d_model": self.config["model"]["encoder"]["d_model"],
+                "n_layers": self.config["model"]["encoder"]["n_layers"],
+                "lr": self.config["train"]["optimizer"]["lr"],
+            },
+        )
+
         for epoch in range(self.current_epoch, self.config["train"]["epochs"]):
             self.current_epoch = epoch
 
@@ -195,9 +215,9 @@ class Trainer:
                     f"Epoch {epoch}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}"
                 )
 
-                # Early stopping check
                 if val_loss < self.best_val_loss - self.early_stop_min_delta:
                     self.best_val_loss = val_loss
+                    self.best_epoch = epoch
                     self.patience_counter = 0
                     print(f"Val loss improved to {val_loss:.4f}")
                 else:
@@ -206,8 +226,22 @@ class Trainer:
                         f"No improvement. Patience: {self.patience_counter}/{self.early_stop_patience}"
                     )
 
+                if epoch % self.notify_every_n_epochs == 0:
+                    self.discord.send_training_stats(
+                        epoch=epoch,
+                        train_loss=train_loss,
+                        val_loss=val_loss,
+                        best_val_loss=self.best_val_loss,
+                        patience_counter=self.patience_counter,
+                        total_epochs=self.config["train"]["epochs"],
+                        lr=self.optimizer.param_groups[0]["lr"],
+                    )
+
                 if self.patience_counter >= self.early_stop_patience:
                     print(f"Early stopping triggered at epoch {epoch}")
+                    self._send_completion_notification(
+                        epoch, train_loss, val_loss, "early_stopped"
+                    )
                     break
 
             if epoch % self.config["train"]["save_every_n_epochs"] == 0:
@@ -224,4 +258,21 @@ class Trainer:
                     self.global_step,
                 )
 
+        self._send_completion_notification(epoch, train_loss, val_loss, "completed")
         self.logger.finish()
+
+    def _send_completion_notification(
+        self, epoch: int, train_loss: float, val_loss: float, reason: str
+    ):
+        output_dir = Path(self.config["paths"]["output_dir"])
+        audio_path = output_dir / "result.wav"
+
+        self.discord.send_completion(
+            total_epochs=epoch + 1,
+            best_epoch=self.best_epoch,
+            best_val_loss=self.best_val_loss,
+            final_train_loss=train_loss,
+            final_val_loss=val_loss,
+            reason=reason,
+            audio_path=audio_path if audio_path.exists() else None,
+        )
