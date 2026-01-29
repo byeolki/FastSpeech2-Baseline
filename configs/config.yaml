@@ -97,27 +97,27 @@ data:
         wavs: "wavs"
 
 train:
-    batch_size: 128
-    accumulate_grad_batches: 1
+    batch_size: 64
+    accumulate_grad_batches: 2
     num_workers: 16
     pin_memory: true
     prefetch_factor: 4
 
     epochs: 1000
-    save_every_n_epochs: 10
-    validate_every_n_epochs: 1
+    save_every_n_epochs: 5
+    validate_every_n_epochs: 5
     log_every_n_steps: 100
 
     optimizer:
         name: "AdamW"
-        lr: 5e-4
+        lr: 1e-3
         betas: [0.9, 0.98]
         eps: 1e-9
         weight_decay: 1e-4
 
     scheduler:
         name: "noam"
-        warmup_steps: 4000
+        warmup_steps: 8000
 
     mixed_precision: "bf16"
     gradient_clip_val: 1.0
@@ -125,10 +125,10 @@ train:
     loss_weights:
         mel: 1.0
         postnet: 1.0
-        duration: 0.3
-        pitch: 0.5
-        energy: 0.2
+        duration: 1.0
+        pitch: 0.8
+        energy: 0.5
 
     early_stopping:
-        patience: 20
-        min_delta: 0.001
+        patience: 50
+        min_delta: 0.0001
